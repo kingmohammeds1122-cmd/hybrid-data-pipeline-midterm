@@ -262,3 +262,9 @@ The final Path B report contains only successful hardened runs. A pre-hardening 
 The current implementation includes explicit EMPTY_ITEMS and MULTIPLE_CONFLICTING_ERRORS quarantine codes, permanent edge-case tests, automatic required metrics aliases, safe Path B try/finally cleanup, and a cleaned successful Path B history.
 
 Latest automated verification: 19 passed.
+
+## Spark UI Evidence
+
+Spark UI evidence was captured from the large-file Spark run. The evidence shows Spark 3.5.6, 6 completed Jobs, 6 completed Stages, 99 successful Tasks, 12.4 GiB of input, and 30,000,000 input records. Stage details also show local task execution and task-level input and shuffle metrics.
+
+The selected advanced path is Path B. Path A standalone-cluster requirements are not claimed.

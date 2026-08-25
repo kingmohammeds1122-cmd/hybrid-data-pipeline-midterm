@@ -289,3 +289,11 @@ Every generated report entry exposes the file name and size, engine, rows read, 
 The current implementation includes explicit EMPTY_ITEMS and MULTIPLE_CONFLICTING_ERRORS quarantine codes, permanent edge-case tests, automatic required metrics aliases, safe Path B try/finally cleanup, and a cleaned successful Path B history.
 
 Latest automated verification: 19 passed.
+
+## Spark UI Evidence
+
+The Spark UI evidence was captured from the large-file Spark run using Spark 3.5.6. The Jobs view shows 6 completed Jobs. The Stages view shows 6 completed Stages and 99/99 successful Tasks. The detailed Stage view shows 12.4 GiB input, 30,000,000 input records, 99 local tasks, and task-level input and shuffle metrics.
+
+Evidence files: `evidence/spark_ui_jobs.png`, `evidence/spark_ui_stages.png`, `evidence/spark_ui_stage_details.png`, `evidence/spark_ui_tasks.png`, and `evidence/spark_ui_additional_metrics.png`.
+
+The project uses Path B as its advanced path. The additional `spark_master_ui_path_a.png` image is retained as supplementary evidence only; the project does not claim completion of the separate Path A cluster requirements.

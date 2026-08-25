@@ -1,0 +1,49 @@
+{
+    "runs":  [
+                 {
+                     "run_id":  "768eae20-e971-4728-9e76-48ec8beee7cb",
+                     "delta_file":  "D:\\midterm-data-pipeline\\data\\delta\\delta_v2.csv",
+                     "status":  "completed",
+                     "processed_count":  2,
+                     "inserted_count":  1,
+                     "updated_count":  1,
+                     "unchanged_count":  0,
+                     "failed_count":  0,
+                     "watermark_before":  2,
+                     "watermark_after":  2,
+                     "batch_size":  5000,
+                     "elapsed_seconds":  0.010233,
+                     "records_per_second":  195.45
+                 },
+                 {
+                     "run_id":  "a1e77be3-a8fa-4e3a-a438-bf604e29173e",
+                     "delta_file":  "D:\\midterm-data-pipeline\\data\\delta\\delta_v2.csv",
+                     "status":  "completed",
+                     "processed_count":  2,
+                     "inserted_count":  0,
+                     "updated_count":  0,
+                     "unchanged_count":  2,
+                     "failed_count":  0,
+                     "watermark_before":  2,
+                     "watermark_after":  2,
+                     "batch_size":  5000,
+                     "elapsed_seconds":  0.002774,
+                     "records_per_second":  721.03
+                 },
+                 {
+                     "run_id":  "538c7b7c-4964-46f0-b96f-870f3aba09d3",
+                     "delta_file":  "D:\\midterm-data-pipeline\\data\\delta\\delta_v2.csv",
+                     "status":  "completed",
+                     "processed_count":  2,
+                     "inserted_count":  0,
+                     "updated_count":  0,
+                     "unchanged_count":  2,
+                     "failed_count":  0,
+                     "watermark_before":  2,
+                     "watermark_after":  2,
+                     "batch_size":  5000,
+                     "elapsed_seconds":  0.002273,
+                     "records_per_second":  879.89
+                 }
+             ]
+}

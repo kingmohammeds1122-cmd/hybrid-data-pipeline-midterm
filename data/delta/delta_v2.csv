@@ -1,0 +1,3 @@
+﻿order_id,order_date,status,customer_id,customer_name,customer_phone,customer_email,city,district,delivery_type,delivery_cost,payment_method,payment_status,payment_amount,currency,total_amount,items_json,record_version,updated_at,operation,quality_status
+طلب-100001,2025-01-12T00:13:00,confirmed,CUSTOMER-UPDATED,Updated Customer,714876334,user392083@example.com,TestCity,TestDistrict,standard,200,cash,paid,546500,YER,546500,"[]",2,2026-08-25T10:00:00,UPDATE,corrected
+PATHB-TEST-001,2026-08-25T10:00:00,pending,PATHB-CUSTOMER-001,Path B Customer,700000002,pathb@example.com,TestCity,TestDistrict,standard,100,cash,pending,500,YER,600,"[]",1,2026-08-25T10:00:00,INSERT,corrected

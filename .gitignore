@@ -1,0 +1,14 @@
+﻿.venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.zip
+*.before-*
+*.broken
+logs/
+data/*
+!data/delta/
+!data/delta/*.csv
+reports/*.jsonl
+data/sample/
+*.jsonl

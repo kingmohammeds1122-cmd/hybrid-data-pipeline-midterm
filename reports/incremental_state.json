@@ -1,0 +1,8 @@
+{
+  "last_watermark": 2,
+  "processed_deltas": [
+    "D:\\midterm-data-pipeline\\data\\delta\\delta_v1.csv",
+    "D:\\midterm-data-pipeline\\data\\delta\\delta_v2.csv"
+  ],
+  "last_run_id": "538c7b7c-4964-46f0-b96f-870f3aba09d3"
+}

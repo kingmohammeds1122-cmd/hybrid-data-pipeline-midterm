@@ -1,0 +1,195 @@
+{
+  "runs": [
+    {
+      "report_created_at": "2026-08-23T22:43:24.039494+00:00",
+      "run_id": "7a7b4929-18a5-4c11-9096-daec5f22cace",
+      "input_file": "D:\\midterm-data-pipeline\\data\\router_test.csv",
+      "engine_used": "python_batch",
+      "configuration": {
+        "small_file_threshold_mb": 200,
+        "batch_size": 5000,
+        "mongodb_database": "midterm_data_pipeline",
+        "orders_raw_collection": "orders_raw",
+        "orders_validated_collection": "orders_validated",
+        "orders_quarantine_collection": "orders_quarantine"
+      },
+      "router": {
+        "file_path": "D:\\midterm-data-pipeline\\data\\router_test.csv",
+        "file_size_bytes": 47,
+        "file_size_mb": 4.482269287109375e-05,
+        "threshold_mb": 200,
+        "engine": "python_batch",
+        "reason": "file size 0.00 MB is less than or equal to the threshold 200 MB"
+      },
+      "raw_load": {
+        "run_id": "7a7b4929-18a5-4c11-9096-daec5f22cace",
+        "source_file": "D:\\midterm-data-pipeline\\data\\router_test.csv",
+        "engine_used": "python_batch",
+        "records_loaded": 1,
+        "batches_inserted": 1,
+        "batch_size": 5000,
+        "elapsed_seconds": 0.023697,
+        "records_per_second": 42.2
+      },
+      "elt": {
+        "raw_records_read": 1,
+        "valid_records": 0,
+        "corrected_records": 0,
+        "quarantined_records": 1,
+        "duplicate_records_quarantined": 0,
+        "validated_upsert_attempts": 0,
+        "quarantine_upsert_attempts": 1,
+        "run_id": "7a7b4929-18a5-4c11-9096-daec5f22cace",
+        "duplicate_order_id_groups": 0,
+        "elapsed_seconds": 0.275372,
+        "records_per_second": 3.63
+      },
+      "consistency": {
+        "raw_records_read": 1,
+        "validated_classification_records": 0,
+        "quarantined_classification_records": 1,
+        "classification_total": 1
+      }
+    },
+    {
+      "report_created_at": "2026-08-24T09:58:07.803380+00:00",
+      "run_id": "d99b6635-6877-4263-9b17-ff522a49fb48",
+      "input_file": "C:\\Big Data\\orders_huge_mixed_quality.csv",
+      "engine_used": "pyspark",
+      "configuration": {
+        "small_file_threshold_mb": 200,
+        "batch_size": 5000,
+        "mongodb_database": "midterm_data_pipeline",
+        "orders_raw_collection": "orders_raw",
+        "orders_validated_collection": "orders_validated",
+        "orders_quarantine_collection": "orders_quarantine"
+      },
+      "router": {
+        "file_path": "C:\\Big Data\\orders_huge_mixed_quality.csv",
+        "file_size_bytes": 13264821500,
+        "file_size_mb": 12650.32,
+        "threshold_mb": 200,
+        "engine": "pyspark",
+        "reason": "file size 12650.32 MB is greater than the threshold 200 MB"
+      },
+      "raw_load": {
+        "run_id": "d99b6635-6877-4263-9b17-ff522a49fb48",
+        "source_file": "C:\\Big Data\\orders_huge_mixed_quality.csv",
+        "engine_used": "pyspark",
+        "records_loaded": 30000000
+      },
+      "elt": {
+        "raw_records_read": 30000000,
+        "valid_records": 0,
+        "corrected_records": 27457845,
+        "quarantined_records": 2542155,
+        "duplicate_records_quarantined": 417584,
+        "validated_upsert_attempts": 27457845,
+        "quarantine_upsert_attempts": 2542155,
+        "run_id": "d99b6635-6877-4263-9b17-ff522a49fb48",
+        "duplicate_order_id_groups": 207689,
+        "elapsed_seconds": 27217.458265,
+        "records_per_second": 1102.23
+      },
+      "consistency": {
+        "raw_records_read": 30000000,
+        "validated_classification_records": 27457845,
+        "quarantined_classification_records": 2542155,
+        "classification_total": 30000000
+      },
+      "rows_read": 30000000,
+      "raw_loaded": 30000000,
+      "valid_count": 0,
+      "corrected_count": 27457845,
+      "quarantine_count": 2542155,
+      "throughput_records_per_second": 1102.23,
+      "error_case_counts": {
+        "INVALID_IMPOSSIBLE_DATE": 878675,
+        "CORRUPTED_ITEMS_JSON": 629840,
+        "MISSING_CUSTOMER_ID": 419474,
+        "DUPLICATE_ORDER_ID": 417584,
+        "AMBIGUOUS_NEGATIVE_VALUE": 210021,
+        "MISSING_ORDER_ID": 209392
+      },
+      "upsert_metrics": {
+        "inserted_count": 30000000,
+        "updated_count": 0,
+        "unchanged_count": 0,
+        "measurement_note": "Initial final run started with empty validated and quarantine collections; counts are derived from successful upsert attempts."
+      },
+      "verification": {
+        "raw_to_final_conservation": true,
+        "raw_records": 30000000,
+        "validated_records": 27457845,
+        "quarantine_records": 2542155,
+        "validated_unique_index_verified": true,
+        "quarantine_unique_index_verified": true
+      },
+      "quarantine_reprocessing": {
+        "run_id": "d99b6635-6877-4263-9b17-ff522a49fb48",
+        "candidate_count": 872569,
+        "reprocessed_count": 330653,
+        "inserted_count": 330653,
+        "updated_count": 0,
+        "unchanged_count": 0,
+        "skipped_count": 541916,
+        "failed_count": 0,
+        "audit_count": 330653,
+        "reprocess_reason": "DATE_STANDARDIZATION",
+        "backup_file": "reports/quarantine_date_candidates_d99b6635-6877-4263-9b17-ff522a49fb48.jsonl"
+      },
+      "post_reprocessing_verification": {
+        "raw_count": 30000000,
+        "validated_count": 27788498,
+        "quarantine_count": 2211502,
+        "conservation": true,
+        "validated_plus_quarantine": 30000000,
+        "validated_unique_index_verified": true
+      },
+      "idempotency_verification": {
+        "test_order_id": "10000128",
+        "before_count": 27788498,
+        "first_matched": 1,
+        "first_modified": 1,
+        "first_upserted": false,
+        "second_matched": 1,
+        "second_modified": 0,
+        "second_upserted": false,
+        "after_repeated_upsert_count": 27788498,
+        "after_cleanup_count": 27788498,
+        "no_duplicate_created": true,
+        "unique_index_verified": true,
+        "test_marker_removed": true
+      },
+      "path_b_verification": {
+        "implementation": "src/incremental_loader.py",
+        "delta_file": "data/delta/delta_v2.csv",
+        "initial_run": {
+          "processed_count": 2,
+          "inserted_count": 1,
+          "updated_count": 1,
+          "unchanged_count": 0,
+          "failed_count": 0,
+          "watermark_before": 2,
+          "watermark_after": 2,
+          "records_per_second": 195.45
+        },
+        "rerun": {
+          "processed_count": 2,
+          "inserted_count": 0,
+          "updated_count": 0,
+          "unchanged_count": 2,
+          "failed_count": 0,
+          "watermark_before": 2,
+          "watermark_after": 2,
+          "records_per_second": 879.89
+        },
+        "version_field": "record_version",
+        "watermark_state_file": "reports/incremental_state.json",
+        "batch_size": 5000,
+        "idempotent_rerun_verified": true,
+        "failed_watermark_hardening_verified_by_code": true
+      }
+    }
+  ]
+}

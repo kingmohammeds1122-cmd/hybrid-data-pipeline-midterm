@@ -297,3 +297,14 @@ The Spark UI evidence was captured from the large-file Spark run using Spark 3.5
 Evidence files: `evidence/spark_ui_jobs.png`, `evidence/spark_ui_stages.png`, `evidence/spark_ui_stage_details.png`, `evidence/spark_ui_tasks.png`, and `evidence/spark_ui_additional_metrics.png`.
 
 The project uses Path B as its advanced path. The additional `spark_master_ui_path_a.png` image is retained as supplementary evidence only; the project does not claim completion of the separate Path A cluster requirements.
+
+
+
+---
+
+## Final Project Addendum: New Requirements & API
+
+### 1. Unified FastAPI Interface (Part 5)
+To run the unified API and test all project functions (Health, Ingest, Indexes, Queries, Aggregations, Materialized Views, and Scheduled Jobs) via the automated evaluation script:
+```powershell
+uvicorn src.api:app --reload

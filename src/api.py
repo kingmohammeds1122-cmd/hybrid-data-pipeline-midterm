@@ -1,7 +1,3 @@
-"""
-واجهة FastAPI الموحدة والمطابقة لمتطلبات المشروع النهائي (نسخة حقيقية وغير صورية).
-الهدف: ربط وتشغيل جميع وظائف المشروع الفعلية عبر API موحد ليتوافق مع سكريبت التقييم التلقائي.
-"""
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from src.scheduled_jobs import job_refresh_materialized_views, job_generate_periodic_report
@@ -9,7 +5,7 @@ from src.materialized_views import create_status_view, create_city_view, create_
 
 app = FastAPI(
     title="Midterm Data Pipeline API",
-    description="واجهة برمجية موحدة حقيقية لاختبار وتشغيل وظائف نظام معالجة البيانات الضخمة",
+    description="Unified API for testing and running big data pipeline functions",
     version="1.0.0"
 )
 
@@ -19,7 +15,6 @@ def get_db():
 
 @app.get("/health")
 def health_check():
-    """التحقق من حالة اتصال وقاعدة البيانات."""
     try:
         db = get_db()
         db.command("ping")
@@ -29,36 +24,30 @@ def health_check():
 
 @app.post("/ingest")
 def trigger_ingest():
-    """تشغيل بوابة الإدخال ومعالجة البيانات فعلياً."""
     try:
-        # يمكنك استدعاء دالة الإدخال الفعلية هنا، مثال:
         db = get_db()
         count = db["orders_validated"].estimated_document_count()
-        return {"status": "SUCCESS", "message": "تم التحقق من جاهزية الإدخال", "current_records": count}
+        return {"status": "SUCCESS", "message": "Ingestion readiness verified", "current_records": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/indexes")
 def trigger_indexes():
-    """إنشاء وتفعيل الفهارس المطلوبة فعلياً في قاعدة البيانات."""
     try:
         db = get_db()
-        # إنشاء الفهارس الفعلية المطلوبة على المجموعة
         db["orders_validated"].create_index([("status", 1)])
         db["orders_validated"].create_index([("city", 1)])
         db["orders_validated"].create_index([("order_date", 1)])
-        return {"status": "SUCCESS", "message": "تم إنشاء وتفعيل الفهارس بنجاح في قاعدة البيانات"}
+        return {"status": "SUCCESS", "message": "Indexes created and activated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/queries")
 def list_queries():
-    """استعراض قائمة الاستعلامات المتاحة."""
     return {"queries": ["queries_by_status", "sales_by_city", "top_products"]}
 
 @app.get("/queries/{name}")
 def run_query(name: str):
-    """تنفيذ استعلام محدد بالاسم وإرجاع النتائج الحية من القاعدة."""
     db = get_db()
     try:
         if name == "queries_by_status" or name == "orders_by_status":
@@ -68,7 +57,6 @@ def run_query(name: str):
         else:
             data = list(db["orders_validated"].find().limit(10))
         
-        # إزالة ObjectId لكي يكون الناتج متوافقاً تماماً مع JSON
         for doc in data:
             if "_id" in doc:
                 doc["_id"] = str(doc["_id"])
@@ -79,12 +67,10 @@ def run_query(name: str):
 
 @app.get("/")
 def read_root():
-    """الصفحة الرئيسية للواجهة."""
-    return {"message": "مرحباً بك في واجهة نظام معالجة البيانات الضخمة، توجه إلى /docs لعرض التوثيق."}
+    return {"message": "Welcome to the Big Data Pipeline API, check /docs for documentation."}
 
 @app.get("/aggregations")
 def list_aggregations():
-    """استعراض التقارير التجميعية الخمسة المتاحة."""
     return {
         "aggregations": [
             "orders_by_status",
@@ -97,7 +83,6 @@ def list_aggregations():
 
 @app.get("/aggregations/{name}")
 def run_aggregation(name: str):
-    """جلب نتيجة تقرير تجميعي محدد بالاسم من العرض المادي الفعلي."""
     db = get_db()
     try:
         if name == "orders_by_status":
@@ -120,32 +105,29 @@ def run_aggregation(name: str):
 
 @app.post("/refresh-mv")
 def refresh_materialized_views():
-    """تحديث جميع العروض المادية (Materialized Views) فعلياً."""
     try:
         db = get_db()
         create_status_view(db)
         create_city_view(db)
         create_products_view(db)
-        return {"status": "SUCCESS", "message": "تم تحديث جميع العروض المادية بنجاح"}
+        return {"status": "SUCCESS", "message": "All materialized views refreshed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/jobs")
 def list_jobs():
-    """استعراض المهام المجدولة المتاحة."""
     return {"jobs": ["refresh-materialized-views", "generate-periodic-report"]}
 
 @app.post("/jobs/{name}/run")
 def run_job(name: str):
-    """تشغيل مهمة مجدولة محددة يدوياً وتنفيذها برمجياً."""
     try:
         if name == "refresh-materialized-views" or name == "refresh_materialized_views":
             job_refresh_materialized_views()
-            return {"job": name, "status": "SUCCESS", "message": "تم تنفيذ مهمة تحديث العروض المادية وتسجيل السجل بنجاح"}
+            return {"job": name, "status": "SUCCESS", "message": "Materialized views job executed and logged successfully"}
         elif name == "generate-periodic-report" or name == "generate_periodic_report":
             job_generate_periodic_report()
-            return {"job": name, "status": "SUCCESS", "message": "تم تنفيذ مهمة التقرير الدوري وتسجيل السجل بنجاح"}
+            return {"job": name, "status": "SUCCESS", "message": "Periodic report job executed and logged successfully"}
         else:
-            raise HTTPException(status_code=404, detail="المهمة غير موجودة")
+            raise HTTPException(status_code=404, detail="Job not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

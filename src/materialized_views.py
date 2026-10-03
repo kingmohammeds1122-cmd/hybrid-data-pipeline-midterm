@@ -1,28 +1,23 @@
-"""
-الجزء الثالث من المشروع النهائي: العروض المادية (Materialized Views).
-الهدف: حفظ نتائج التجميعات المعقدة في جداول مادية (Collections) مستقلة 
-باستخدام معامل ($out) لتسريع استجابة النظام وتخفيف الحمل عن القرص الصلب.
-"""
 from pymongo.database import Database
 from pymongo import MongoClient
 import time
 
 def create_status_view(db: Database):
-    print("جاري إنشاء العرض المادي: view_orders_by_status...")
+    print("Creating materialized view: view_orders_by_status...")
     pipeline = [
-        {"$limit": 1000000}, # عينة للتنفيذ السريع
+        {"$limit": 1000000},
         {"$group": {
             "_id": "$status", 
             "count": {"$sum": 1}, 
             "total_value": {"$sum": "$total_amount"}
         }},
         {"$sort": {"count": -1}},
-        {"$out": "view_orders_by_status"} # حفظ النتيجة في كوليكشن جديد
+        {"$out": "view_orders_by_status"}
     ]
     db["orders_validated"].aggregate(pipeline)
 
 def create_city_view(db: Database):
-    print("جاري إنشاء العرض المادي: view_sales_by_city...")
+    print("Creating materialized view: view_sales_by_city...")
     pipeline = [
         {"$limit": 1000000},
         {"$match": {"city": {"$ne": None}}},
@@ -37,7 +32,7 @@ def create_city_view(db: Database):
     db["orders_validated"].aggregate(pipeline)
 
 def create_products_view(db: Database):
-    print("جاري إنشاء العرض المادي: view_top_products...")
+    print("Creating materialized view: view_top_products...")
     pipeline = [
         {"$limit": 1000000},
         {"$match": {"items": {"$type": "array"}}},
@@ -56,7 +51,7 @@ if __name__ == "__main__":
     client = MongoClient("mongodb://localhost:27017/")
     database = client["midterm_data_pipeline"]
     
-    print("\n=== بدء الجزء الثالث: بناء العروض المادية (Materialized Views) ===\n")
+    print("\n=== Part 3: Building Materialized Views Started ===\n")
     
     start_time = time.time()
     
@@ -66,5 +61,5 @@ if __name__ == "__main__":
     
     end_time = time.time()
     
-    print(f"\n=== اكتمل إنشاء العروض المادية بنجاح في {round(end_time - start_time, 2)} ثانية ===")
-    print("الآن يمكن للواجهة البرمجية (API) الاستعلام من هذه الجداول في أجزاء من الثانية بدلاً من انتظار ساعات.")
+    print(f"\n=== Materialized Views Created Successfully in {round(end_time - start_time, 2)} seconds ===")
+    print("API can now query these collections in milliseconds instead of hours.")

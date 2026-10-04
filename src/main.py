@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# إضافة المجلد الرئيسي للمشروع إلى مسارات بايثون
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+import config
+
 """Single entry point for the complete hybrid ELT data pipeline."""
 
 from __future__ import annotations
@@ -54,7 +62,7 @@ def run_complete_pipeline(
     if decision.engine == "python_batch":
         raw_load_result = load_csv_to_raw(
             input_file=decision.file_path,
-            batch_size=settings.BATCH_SIZE,
+            batch_size=config.settings.BATCH_SIZE,
         )
     elif decision.engine == "pyspark":
         raw_load_result = load_csv_to_raw_with_spark(
@@ -95,7 +103,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--input",
         type=Path,
-        default=settings.SOURCE_DATA_FILE,
+        default=config.settings.SOURCE_DATA_FILE,
         help="Input CSV path; defaults to the configured large file.",
     )
     parser.add_argument(
@@ -126,7 +134,7 @@ def main() -> int:
     print("Complete hybrid ELT pipeline finished successfully")
     print(f"run_id: {result['run_id']}")
     print(f"engine_used: {result['engine_used']}")
-    print(f"results_file: {settings.RESULTS_FILE}")
+    print(f"results_file: {config.settings.RESULTS_FILE}")
     print(
         "classification_total: "
         f"{result['consistency']['classification_total']}"

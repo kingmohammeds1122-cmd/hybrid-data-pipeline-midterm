@@ -1,133 +1,134 @@
+"""Unified FastAPI interface for the final-project additions."""
+from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
-from src.scheduled_jobs import job_refresh_materialized_views, job_generate_periodic_report
-from src.materialized_views import create_status_view, create_city_view, create_products_view
+from config import settings
+from src.queries_and_indexes import create_required_indexes, query_customer_orders, query_orders_by_status, query_high_value_orders, query_orders_by_city, query_orders_by_date_range
+from src.aggregations import REPORTS, run_report
+from src.materialized_views import DAILY_VIEW, PRODUCTS_VIEW, refresh_materialized_views
+from src.scheduled_jobs import job_refresh_materialized_views, job_generate_periodic_report, list_job_logs
 
-app = FastAPI(
-    title="Midterm Data Pipeline API",
-    description="Unified API for testing and running big data pipeline functions",
-    version="1.0.0"
-)
+app = FastAPI(title="Hybrid Data Pipeline Final API", version="2.0.0")
+
+
+def get_client():
+    return MongoClient(settings.MONGODB_URI, serverSelectionTimeoutMS=settings.MONGODB_SERVER_SELECTION_TIMEOUT_MS)
+
 
 def get_db():
-    client = MongoClient("mongodb://localhost:27017/")
-    return client["midterm_data_pipeline"]
+    client = get_client()
+    return client, client[settings.MONGODB_DATABASE]
+
+
+def json_safe(value):
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {str(k): json_safe(v) for k, v in value.items() if k != "_id"}
+    return value
+
 
 @app.get("/health")
-def health_check():
+def health():
+    client, db = get_db()
     try:
-        db = get_db()
         db.command("ping")
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "healthy", "database": settings.MONGODB_DATABASE}
+    finally:
+        client.close()
+
 
 @app.post("/ingest")
-def trigger_ingest():
+def ingest():
+    client, db = get_db()
     try:
-        db = get_db()
-        count = db["orders_validated"].estimated_document_count()
-        return {"status": "SUCCESS", "message": "Ingestion readiness verified", "current_records": count}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "SUCCESS", "database": settings.MONGODB_DATABASE, "raw_count": db[settings.ORDERS_RAW_COLLECTION].count_documents({})}
+    finally:
+        client.close()
+
 
 @app.post("/indexes")
-def trigger_indexes():
+def indexes():
+    client, db = get_db()
     try:
-        db = get_db()
-        db["orders_validated"].create_index([("status", 1)])
-        db["orders_validated"].create_index([("city", 1)])
-        db["orders_validated"].create_index([("order_date", 1)])
-        return {"status": "SUCCESS", "message": "Indexes created and activated successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "SUCCESS", "indexes": create_required_indexes(db)}
+    finally:
+        client.close()
+
 
 @app.get("/queries")
-def list_queries():
-    return {"queries": ["queries_by_status", "sales_by_city", "top_products"]}
+def queries():
+    return {"queries": ["customer_orders", "orders_by_status", "high_value_orders", "orders_by_city", "orders_by_date_range"]}
+
 
 @app.get("/queries/{name}")
-def run_query(name: str):
-    db = get_db()
+def query(name: str, customer_id: str = "CUST_001", status: str = "Completed", city: str = "Sana'a", start_date: str = "2000-01-01", end_date: str = "2100-01-01", min_amount: float = 5000.0):
+    client, db = get_db()
     try:
-        if name == "queries_by_status" or name == "orders_by_status":
-            data = list(db["orders_validated"].find({"status": "Completed"}).limit(10))
-        elif name == "sales_by_city":
-            data = list(db["orders_validated"].find({"city": {"$exists": True}}).limit(10))
-        else:
-            data = list(db["orders_validated"].find().limit(10))
-        
-        for doc in data:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
-                
-        return {"query_name": name, "status": "executed", "sample_data": data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        functions = {
+            "customer_orders": lambda: query_customer_orders(db, customer_id),
+            "orders_by_status": lambda: query_orders_by_status(db, status),
+            "high_value_orders": lambda: query_high_value_orders(db, min_amount),
+            "orders_by_city": lambda: query_orders_by_city(db, city),
+            "orders_by_date_range": lambda: query_orders_by_date_range(db, start_date, end_date),
+        }
+        if name not in functions:
+            raise HTTPException(status_code=404, detail="Query not found")
+        return {"query_name": name, "status": "SUCCESS", "data": json_safe(functions[name]())}
+    finally:
+        client.close()
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Big Data Pipeline API, check /docs for documentation."}
 
 @app.get("/aggregations")
-def list_aggregations():
-    return {
-        "aggregations": [
-            "orders_by_status",
-            "sales_by_city",
-            "top_products",
-            "top_customers",
-            "sales_by_period"
-        ]
-    }
+def aggregations():
+    return {"aggregations": list(REPORTS)}
+
 
 @app.get("/aggregations/{name}")
-def run_aggregation(name: str):
-    db = get_db()
+def aggregation(name: str):
+    client, db = get_db()
     try:
-        if name == "orders_by_status":
-            view_name = "view_orders_by_status"
-        elif name == "sales_by_city":
-            view_name = "view_sales_by_city"
-        elif name == "top_products":
-            view_name = "view_top_products"
-        else:
-            view_name = name
-            
-        if view_name in db.list_collection_names():
-            data = list(db[view_name].find({}, {"_id": 0}))
-        else:
-            data = []
-            
-        return {"aggregation": name, "data": data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        if name not in REPORTS:
+            raise HTTPException(status_code=404, detail="Aggregation not found")
+        return {"aggregation": name, "status": "SUCCESS", "data": json_safe(run_report(db, name))}
+    finally:
+        client.close()
+
+
+@app.get("/views")
+def views():
+    return {"views": [DAILY_VIEW, PRODUCTS_VIEW]}
+
+
+@app.get("/views/{name}/run")
+def view(name: str):
+    client, db = get_db()
+    try:
+        if name not in {DAILY_VIEW, PRODUCTS_VIEW}:
+            raise HTTPException(status_code=404, detail="View not found")
+        return {"view": name, "status": "SUCCESS", "data": json_safe(list(db[name].find({}, {"_id": 0}).limit(100)))}
+    finally:
+        client.close()
+
 
 @app.post("/refresh-mv")
-def refresh_materialized_views():
+def refresh_mv():
+    client, db = get_db()
     try:
-        db = get_db()
-        create_status_view(db)
-        create_city_view(db)
-        create_products_view(db)
-        return {"status": "SUCCESS", "message": "All materialized views refreshed successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return refresh_materialized_views(db)
+    finally:
+        client.close()
+
 
 @app.get("/jobs")
-def list_jobs():
-    return {"jobs": ["refresh-materialized-views", "generate-periodic-report"]}
+def jobs():
+    return {"jobs": ["refresh_materialized_views", "generate_periodic_report"], "latest_logs": json_safe(list_job_logs())}
+
 
 @app.post("/jobs/{name}/run")
 def run_job(name: str):
-    try:
-        if name == "refresh-materialized-views" or name == "refresh_materialized_views":
-            job_refresh_materialized_views()
-            return {"job": name, "status": "SUCCESS", "message": "Materialized views job executed and logged successfully"}
-        elif name == "generate-periodic-report" or name == "generate_periodic_report":
-            job_generate_periodic_report()
-            return {"job": name, "status": "SUCCESS", "message": "Periodic report job executed and logged successfully"}
-        else:
-            raise HTTPException(status_code=404, detail="Job not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if name == "refresh_materialized_views":
+        return job_refresh_materialized_views()
+    if name == "generate_periodic_report":
+        return job_generate_periodic_report()
+    raise HTTPException(status_code=404, detail="Job not found")

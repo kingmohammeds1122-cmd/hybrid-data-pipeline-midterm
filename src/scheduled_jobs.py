@@ -1,69 +1,68 @@
+"""Final-project scheduled jobs with persistent execution logs."""
+from __future__ import annotations
 import time
-import datetime
+from datetime import datetime, timezone
 from pymongo import MongoClient
-from src.materialized_views import create_status_view, create_city_view, create_products_view
+from config import settings
+from src.materialized_views import refresh_materialized_views
 
-def log_job_execution(job_name: str, status: str, duration: float, error_message: str = None):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n[JOB LOG] [{timestamp}] Job: '{job_name}'")
-    print(f"  - Status: {status}")
-    print(f"  - Duration: {round(duration, 4)} seconds")
-    if error_message:
-        print(f"  - Error: {error_message}")
-    print("-" * 50)
+JOBS_LOG = "jobs_log"
 
 
-def job_refresh_materialized_views():
-    job_name = "Refresh Materialized Views"
-    start_time = time.time()
-    print(f"\n-> Starting job: {job_name}...")
-    
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _run_job(job_name: str, function, *args, **kwargs) -> dict:
+    started = _now()
+    timer = time.perf_counter()
+    status = "SUCCESS"
+    error_message = None
+    result = None
+    client = MongoClient(settings.MONGODB_URI)
     try:
-        client = MongoClient("mongodb://localhost:27017/")
-        db = client["midterm_data_pipeline"]
-        
-        create_status_view(db)
-        create_city_view(db)
-        create_products_view(db)
-        
-        end_time = time.time()
-        duration = end_time - start_time
-        log_job_execution(job_name, "SUCCESS", duration)
-        
-    except Exception as e:
-        end_time = time.time()
-        duration = end_time - start_time
-        log_job_execution(job_name, "FAILED", duration, str(e))
+        db = client[settings.MONGODB_DATABASE]
+        result = function(db, *args, **kwargs)
+    except Exception as exc:
+        status = "FAILED"
+        error_message = str(exc)
+    finally:
+        ended = _now()
+        duration = round(time.perf_counter() - timer, 6)
+        client[settings.MONGODB_DATABASE][JOBS_LOG].insert_one({
+            "job_name": job_name,
+            "started_at": started,
+            "ended_at": ended,
+            "duration_seconds": duration,
+            "status": status,
+            "error_message": error_message,
+            "result": result,
+        })
+        client.close()
+    if status == "FAILED":
+        raise RuntimeError(error_message)
+    return {"job_name": job_name, "status": status, "duration_seconds": duration, "result": result}
 
 
-def job_generate_periodic_report():
-    job_name = "Generate Periodic Summary Report"
-    start_time = time.time()
-    print(f"\n-> Starting job: {job_name}...")
-    
+def job_refresh_materialized_views(run_id: str | None = None) -> dict:
+    return _run_job("refresh_materialized_views", refresh_materialized_views, run_id=run_id)
+
+
+def job_generate_periodic_report() -> dict:
+    def report(db):
+        return {"validated_count": db[settings.ORDERS_VALIDATED_COLLECTION].count_documents({}), "quarantine_count": db[settings.ORDERS_QUARANTINE_COLLECTION].count_documents({})}
+    return _run_job("generate_periodic_report", report)
+
+
+def list_job_logs(limit: int = 50) -> list[dict]:
+    client = MongoClient(settings.MONGODB_URI)
     try:
-        client = MongoClient("mongodb://localhost:27017/")
-        db = client["midterm_data_pipeline"]
-        
-        total_orders = db["orders_validated"].estimated_document_count()
-        timestamp = datetime.datetime.now().isoformat()
-        
-        print(f"  [Periodic Report] Total orders count: {total_orders} (Time: {timestamp})")
-        
-        end_time = time.time()
-        duration = end_time - start_time
-        log_job_execution(job_name, "SUCCESS", duration)
-        
-    except Exception as e:
-        end_time = time.time()
-        duration = end_time - start_time
-        log_job_execution(job_name, "FAILED", duration, str(e))
+        db = client[settings.MONGODB_DATABASE]
+        return list(db[JOBS_LOG].find({}, {"_id": 0}).sort("started_at", -1).limit(limit))
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":
-    print("\n=== Manual Scheduled Jobs Test ===")
-    
-    job_refresh_materialized_views()
-    job_generate_periodic_report()
-    
-    print("\n=== Scheduled Jobs Test Completed ===")
+    print(job_refresh_materialized_views())
+    print(job_generate_periodic_report())

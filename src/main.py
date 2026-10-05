@@ -1,16 +1,8 @@
-import sys
-from pathlib import Path
-
-# إضافة المجلد الرئيسي للمشروع إلى مسارات بايثون
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-import config
-
-"""Single entry point for the complete hybrid ELT data pipeline."""
-
+﻿"""Single entry point for the complete hybrid ELT data pipeline."""
 from __future__ import annotations
 
 import argparse
+import csv
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +15,7 @@ from src.metrics import (
     validate_result_consistency,
     write_results_file,
 )
+from src.schema_validation import validate_headers
 from src.spark_loader import load_csv_to_raw_with_spark
 
 
@@ -30,12 +23,21 @@ class MainPipelineError(RuntimeError):
     """Raised when the complete pipeline cannot finish safely."""
 
 
+def validate_input_file_schema(input_file: Path) -> None:
+    """Validate CSV headers before inserting any raw data."""
+    with input_file.open(
+        "r",
+        encoding=settings.CSV_ENCODING,
+        newline=settings.CSV_NEWLINE,
+    ) as handle:
+        reader = csv.DictReader(handle)
+        validate_headers(reader.fieldnames)
+
 
 def routing_result_as_dict(decision: Any) -> dict[str, Any]:
     """Convert a RoutingDecision into a report-friendly dictionary."""
-
     return {
-        "file_path": decision.file_path,
+        "file_path": str(decision.file_path),
         "file_size_bytes": decision.file_size_bytes,
         "file_size_mb": decision.file_size_mb,
         "threshold_mb": decision.threshold_mb,
@@ -44,25 +46,27 @@ def routing_result_as_dict(decision: Any) -> dict[str, Any]:
     }
 
 
-
 def run_complete_pipeline(
     input_file: Path,
     progress_interval: int,
 ) -> dict[str, Any]:
-    """Route, load, transform, classify, and persist one complete run."""
-
+    """Route, validate, load, transform, classify, and persist one run."""
     decision = route_file(input_file)
+    validate_input_file_schema(decision.file_path)
     router_result = routing_result_as_dict(decision)
 
     print(f"Input file: {decision.file_path}")
     print(f"File size: {decision.file_size_mb:.2f} MB")
     print(f"Selected engine: {decision.engine}")
+    print(f"Profile: {settings.PIPELINE_PROFILE}")
+    print(f"Database: {settings.MONGODB_DATABASE}")
+    print("Input schema: PASS")
     print(f"Reason: {decision.reason}")
 
     if decision.engine == "python_batch":
         raw_load_result = load_csv_to_raw(
             input_file=decision.file_path,
-            batch_size=config.settings.BATCH_SIZE,
+            batch_size=settings.BATCH_SIZE,
         )
     elif decision.engine == "pyspark":
         raw_load_result = load_csv_to_raw_with_spark(
@@ -93,18 +97,47 @@ def run_complete_pipeline(
     return result
 
 
+def print_professor_results(result: dict[str, Any]) -> None:
+    """Print the exact labels used in the professor's reference sheet."""
+    elt_metrics = result.get("elt", {})
+    raw_metrics = result.get("raw_load", {})
+
+    input_orders_raw = int(
+        elt_metrics.get(
+            "raw_records_read",
+            raw_metrics.get("records_loaded", 0),
+        )
+    )
+    clean_valid = int(elt_metrics.get("valid_records", 0))
+    corrected = int(elt_metrics.get("corrected_records", 0))
+    quarantine = int(elt_metrics.get("quarantined_records", 0))
+    orders_validated = clean_valid + corrected
+    consistency = orders_validated + quarantine
+
+    print()
+    print("==========================================")
+    print("بيانات التدريب العامة - مقرر البيانات الضخمة")
+    print("==========================================")
+    print()
+    print(f"Input / orders_raw: {input_orders_raw:,}")
+    print(f"Clean Valid: {clean_valid:,}")
+    print(f"Corrected: {corrected:,}")
+    print(f"orders_validated: {orders_validated:,}")
+    print(f"orders_quarantine: {quarantine:,}")
+    print(f"Consistency: {consistency:,}")
+    print("==========================================")
+
 
 def build_argument_parser() -> argparse.ArgumentParser:
     """Build the complete-pipeline command-line interface."""
-
     parser = argparse.ArgumentParser(
         description="Run the complete hybrid orders ELT pipeline."
     )
     parser.add_argument(
         "--input",
         type=Path,
-        default=config.settings.SOURCE_DATA_FILE,
-        help="Input CSV path; defaults to the configured large file.",
+        default=settings.SOURCE_DATA_FILE,
+        help="Input CSV path.",
     )
     parser.add_argument(
         "--progress-interval",
@@ -115,10 +148,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
 def main() -> int:
-    """Run the complete pipeline and print the final metrics."""
-
+    """Run the complete pipeline and print final metrics."""
     parser = build_argument_parser()
     arguments = parser.parse_args()
 
@@ -127,19 +158,24 @@ def main() -> int:
             input_file=arguments.input,
             progress_interval=arguments.progress_interval,
         )
-    except (FileNotFoundError, ValueError, OSError, MainPipelineError) as error:
+    except (
+        FileNotFoundError,
+        ValueError,
+        OSError,
+        MainPipelineError,
+    ) as error:
         parser.error(str(error))
         return 2
 
     print("Complete hybrid ELT pipeline finished successfully")
     print(f"run_id: {result['run_id']}")
     print(f"engine_used: {result['engine_used']}")
-    print(f"results_file: {config.settings.RESULTS_FILE}")
+    print(f"results_file: {settings.RESULTS_FILE}")
     print(
         "classification_total: "
         f"{result['consistency']['classification_total']}"
     )
-
+    print_professor_results(result)
     return 0
 
 

@@ -1,11 +1,3 @@
-import sys
-from pathlib import Path
-
-# إضافة المجلد الرئيسي للمشروع إلى مسارات بايثون
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-import config
-
 """Single entry point for the complete hybrid ELT data pipeline."""
 
 from __future__ import annotations
@@ -13,6 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import Any
+
+import config
 
 from config import settings
 from src.batch_loader import load_csv_to_raw

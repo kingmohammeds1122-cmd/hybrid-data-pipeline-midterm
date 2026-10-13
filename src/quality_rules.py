@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -263,7 +264,12 @@ def to_plain_number(value: Decimal) -> int | float:
 
 
 def clean_record(raw_record: dict[str, Any]) -> QualityResult:
-    """Apply the eight deterministic quality rules to one raw record."""
+    """Apply the eight deterministic quality rules to one order."""
+
+    if os.getenv("PIPELINE_PROFILE", "").strip().lower() == "student-test":
+        from src.student_test_rules import clean_student_record
+
+        return clean_student_record(raw_record)
 
     record = dict(raw_record)
     corrections: list[Correction] = []
@@ -506,4 +512,3 @@ def clean_record(raw_record: dict[str, Any]) -> QualityResult:
         error_codes=error_codes,
         error_details=error_details,
     )
-

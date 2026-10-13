@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 # Project paths
-PROJECT_ROOT: Path = Path(r"D:\midterm-data-pipeline")
+PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
 SOURCE_DATA_FILE: Path = Path(
     r"C:\Big Data\orders_huge_mixed_quality.csv"
